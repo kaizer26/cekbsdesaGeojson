@@ -2,6 +2,9 @@ import streamlit as st
 import geopandas as gpd
 import pandas as pd
 import math
+import tempfile
+import os
+
 
 # ====== KONFIGURASI ======
 folder_path = 'G:\\IPDS\\STREAMLIT\\'
