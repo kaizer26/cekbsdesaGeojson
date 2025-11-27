@@ -197,39 +197,43 @@ if bs_file and sls_file:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    # ------ SIMPAN 3 LAYER KE GPKG ------
-    # Konversi seluruh layer ke EPSG:4326
+    # ------ SIMPAN 3 LAYER KE GPKG MENGGUNAKAN FILE TEMPORARY ------
     bs_4326 = bs.to_crs(4326)
     sls_4326 = sls.to_crs(4326)
     bs_flag_4326 = bs_flag.to_crs(4326)
-
-    # Nama layer dari nama file upload
+    
+    # Nama layer mengikuti nama file upload
     bs_layer_name = bs_file.name.replace(".geojson", "")
     sls_layer_name = sls_file.name.replace(".geojson", "")
     
-    # Simpan ke GPKG dalam satu file
-    gpkg_data = io.BytesIO()
+    # Buat file sementara
+    with tempfile.TemporaryDirectory() as tmpdir:
+        gpkg_path = os.path.join(tmpdir, "output.gpkg")
     
-    # 1. Layer hasil analisis
-    bs_flag_4326.to_file(gpkg_data, layer="bs_flag", driver="GPKG")
+        # 1. simpan bs_flag
+        bs_flag_4326.to_file(gpkg_path, layer="bs_flag", driver="GPKG")
     
-    # 2. Layer BS awal
-    bs_4326.to_file(gpkg_data, layer=bs_layer_name, driver="GPKG")
+        # 2. append layer BS raw
+        bs_4326.to_file(gpkg_path, layer=bs_layer_name, driver="GPKG", mode="a")
     
-    # 3. Layer SLS awal
-    sls_4326.to_file(gpkg_data, layer=sls_layer_name, driver="GPKG")
+        # 3. append layer SLS raw
+        sls_4326.to_file(gpkg_path, layer=sls_layer_name, driver="GPKG", mode="a")
     
-    gpkg_data.seek(0)
-
-    # Tampilkan tombol download untuk GeoPackage yang telah diubah ke EPSG:4326
+        # Baca kembali ke BytesIO untuk download
+        with open(gpkg_path, "rb") as f:
+            gpkg_bytes = f.read()
+    
+    # Tampilkan tombol download
     st.download_button(
         label="Unduh Hasil GeoPackage (EPSG:4326)",
-        data=gpkg_data,
+        data=gpkg_bytes,
         file_name="bs_vs_sls_epsg4326.gpkg",
         mime="application/geopackage+sqlite3"
     )
+
     
     st.success("Analisis selesai dan hasil telah disimpan!")
+    st.success("Sebaiknya jangan gunakan file bs_flag sebagai file BS perbaikan, gunakan hanya sebagai alat bantu pengecekan.")
 
 else:
     st.warning("Unggah file GeoJSON untuk BS dan SLS terlebih dahulu.")
