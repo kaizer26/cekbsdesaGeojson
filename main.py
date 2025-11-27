@@ -197,14 +197,28 @@ if bs_file and sls_file:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    # Ubah CRS ke EPSG:4326 (WGS84)
-    bs_flag_4326 = bs_flag.to_crs(epsg=4326)
+    # ------ SIMPAN 3 LAYER KE GPKG ------
+    # Konversi seluruh layer ke EPSG:4326
+    bs_4326 = bs.to_crs(4326)
+    sls_4326 = sls.to_crs(4326)
+    bs_flag_4326 = bs_flag.to_crs(4326)
 
-    # Simpan GeoPackage ke dalam memori setelah konversi CRS
+    # Nama layer dari nama file upload
+    bs_layer_name = bs_file.name.replace(".geojson", "")
+    sls_layer_name = sls_file.name.replace(".geojson", "")
+    
+    # Simpan ke GPKG dalam satu file
     gpkg_data = io.BytesIO()
-    bs_flag_4326.to_file(gpkg_data, layer="bs_flag_", driver="GPKG")
-
-    # Kembalikan pointer file ke awal
+    
+    # 1. Layer hasil analisis
+    bs_flag_4326.to_file(gpkg_data, layer="bs_flag", driver="GPKG")
+    
+    # 2. Layer BS awal
+    bs_4326.to_file(gpkg_data, layer=bs_layer_name, driver="GPKG")
+    
+    # 3. Layer SLS awal
+    sls_4326.to_file(gpkg_data, layer=sls_layer_name, driver="GPKG")
+    
     gpkg_data.seek(0)
 
     # Tampilkan tombol download untuk GeoPackage yang telah diubah ke EPSG:4326
@@ -214,8 +228,6 @@ if bs_file and sls_file:
         file_name="bs_vs_sls_epsg4326.gpkg",
         mime="application/geopackage+sqlite3"
     )
-
-
     
     st.success("Analisis selesai dan hasil telah disimpan!")
 
