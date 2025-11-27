@@ -156,13 +156,26 @@ if bs_file and sls_file:
 
     # Tampilkan hasil di Streamlit
     hasil_analisis = bs_flag[bs_flag["mismatch_dominant"]==True]
-    st.markdown(f"#### Jumlah IDBS yang Bermasalah: {len(hasil_analisis)}")
+
+    export_cols = [
+        "idbs", "nmprov", "nmkab", "nmkec", "nmdesa", "area_bs", "encoded_iddesa", 
+        "n_iddesa_ge20", "detail_iddesa_ge20", "dominant_iddesa", "pct_dominant", 
+        "pct_encoded", "nmsls_g1", "kdsls_g1", "kdsls_g2", "nmsls_g2", "mismatch_dominant"
+    ]
+    
+
+    # Pastikan kolom yang tidak ada tidak menyebabkan error
+    export_cols = [c for c in export_cols if c in hasil_analisis.columns]
+
+    export_df = hasil_analisis[export_cols].copy()
+    
+    st.markdown(f"#### Jumlah IDBS yang Bermasalah: {len(export_df)}")
     st.dataframe(hasil_analisis)
 
     # Pilih file output untuk unduhan
     st.download_button(
         label="Unduh Hasil CSV",
-        data=bs_flag.drop(columns="geometry").to_csv(index=False),
+        data=export_df.drop(columns="geometry").to_csv(index=False),
         file_name="idbs_summary.csv",
         mime="text/csv"
     )
@@ -172,7 +185,7 @@ if bs_file and sls_file:
     # Unduh file Excel
     excel_data = io.BytesIO()
     with pd.ExcelWriter(excel_data, engine='xlsxwriter') as writer:
-        bs_flag.drop(columns="geometry").to_excel(writer, index=False, sheet_name="Sheet1")
+        export_df.drop(columns="geometry").to_excel(writer, index=False, sheet_name="Sheet1")
     excel_data.seek(0)  # Kembalikan pointer file ke awal
 
     # Tampilkan tombol download untuk Excel
