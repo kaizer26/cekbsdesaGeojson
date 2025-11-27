@@ -98,7 +98,7 @@ if bs_file and sls_file:
                   .sort_values(["idbs", "pct"], ascending=[True, False])
                   .groupby(IDBS)
                   .apply(lambda d: " , ".join(
-                      f"{r['nmsls']} - {r[IDSUBSLS][-4:]}" if r[IDSUBSLS][-4:] != '00' else f"{r['nmsls']}"
+                      f"{r['nmsls']} - [{r[IDSUBSLS][-2:]}]" if r[IDSUBSLS][-2:] != '00' else f"{r['nmsls']}"
                       for _, r in d.iterrows()))
                   .reset_index(name="nmsls_g1"))
 
@@ -106,7 +106,7 @@ if bs_file and sls_file:
                   .assign(pct=lambda d: (d["pct_of_bs"]*100).round(2))
                   .sort_values(["idbs", IDSUBSLS], ascending=[True, False])
                   .groupby(IDBS)
-                  .apply(lambda d: " , ".join(f"{r[IDSUBSLS][-4:]}" for _, r in d.iterrows()))
+                  .apply(lambda d: " , ".join(f"{r[IDSUBSLS][-6:]}" for _, r in d.iterrows()))
                   .reset_index(name="kdsls_g1"))
 
     kdsls2 = (ABC_ge20_g2
