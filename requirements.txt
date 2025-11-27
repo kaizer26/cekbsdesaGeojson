@@ -3,5 +3,3 @@ geopandas
 pandas
 streamlit
 xlsxwriter
-tempfile
-os
