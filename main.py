@@ -168,6 +168,7 @@ if bs_file and sls_file:
     export_cols = [c for c in export_cols if c in hasil_analisis.columns]
 
     export_df = hasil_analisis[export_cols].copy()
+    export_df1 = bs_flag[export_cols].copy()
     
     st.markdown(f"#### Jumlah IDBS yang Bermasalah: {len(export_df)}")
     st.dataframe(export_df)
@@ -175,7 +176,7 @@ if bs_file and sls_file:
     # Pilih file output untuk unduhan
     st.download_button(
         label="Unduh Hasil CSV",
-        data=export_df.to_csv(index=False),
+        data=export_df1.to_csv(index=False),
         file_name="idbs_summary.csv",
         mime="text/csv"
     )
@@ -185,7 +186,7 @@ if bs_file and sls_file:
     # Unduh file Excel
     excel_data = io.BytesIO()
     with pd.ExcelWriter(excel_data, engine='xlsxwriter') as writer:
-        export_df.to_excel(writer, index=False, sheet_name="Sheet1")
+        export_df1.to_excel(writer, index=False, sheet_name="Sheet1")
     excel_data.seek(0)  # Kembalikan pointer file ke awal
 
     # Tampilkan tombol download untuk Excel
