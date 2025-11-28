@@ -45,9 +45,11 @@ sls_file = st.sidebar.file_uploader("Unggah File SLS GeoJSON", type="geojson")
 
 # Slider untuk Threshold
 threshold = st.sidebar.slider("Threshold Overlap Signifikan (%)", 0, 100, 20)
+run_analysis = st.sidebar.button("Jalankan")
+
 
 # Memuat dan mempersiapkan data
-if bs_file and sls_file:
+if run_analysis and bs_file and sls_file:
     # Membaca file GeoJSON yang diunggah
     bs = fix(gpd.read_file(bs_file), IDBS)
     sls = fix(gpd.read_file(sls_file), IDSUBSLS)
