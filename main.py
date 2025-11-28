@@ -209,7 +209,7 @@ if st.session_state.get("run") and bs_file and sls_file:
         st.session_state["export_df1"] = export_df1
         st.session_state["gpkg_bytes"] = gpkg_bytes
     
-    st.markdown(f"#### Jumlah IDBS yang Bermasalah: {len(export_df)}")
+    st.markdown(f"#### Jumlah IDBS yang Bermasalah: {len(st.session_state["export_df"])}")
     st.dataframe(st.session_state["export_df"])
 
     # Pilih file output untuk unduhan
