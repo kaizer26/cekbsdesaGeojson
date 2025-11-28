@@ -5,6 +5,99 @@ import math
 import tempfile
 import os
 import io
+import requests
+from datetime import datetime
+
+# ==============================
+# 1. Fetch API + Cache
+# ==============================
+@st.cache_data(ttl=3600)  # cache 1 jam
+def fetch_bps_domains():
+    url = "https://webapi.bps.go.id/v1/api/domain/type/all/key/687e204db62094de46edbcd7ed7cb204/"
+    r = requests.get(url, timeout=10)
+
+    if r.status_code != 200:
+        st.error("Gagal memuat data API BPS")
+        return []
+
+    j = r.json()
+
+    # data ada pada index [1]
+    if "data" not in j:
+        st.error("Format API berubah")
+        return []
+
+    return j["data"][1]
+
+
+# ==============================
+# 2. Helper: Ambil provinsi & kabupaten
+# ==============================
+def get_provinces(domains):
+    return [
+        d for d in domains
+        if d["domain_id"].endswith("00") and d["domain_id"] != "0000"
+    ]
+
+
+def get_kabupaten(domains, prov_id):
+    prefix = prov_id[:2]
+    return [
+        d for d in domains
+        if d["domain_id"].startswith(prefix)
+        and not d["domain_id"].endswith("00")
+    ]
+
+
+# ==============================
+# 3. Init session_state
+# ==============================
+if "provinsi" not in st.session_state:
+    st.session_state["provinsi"] = None
+
+if "kabupaten" not in st.session_state:
+    st.session_state["kabupaten"] = None
+
+
+# ==============================
+# 4. UI Dropdown
+# ==============================
+
+domains = fetch_bps_domains()
+provinces = get_provinces(domains)
+
+# Dropdown Provinsi
+selected_prov = st.selectbox(
+    "Pilih Provinsi",
+    provinces,
+    format_func=lambda x: f"{x['domain_id']} - {x['domain_name']}",
+    index=(
+        next((i for i, p in enumerate(provinces)
+              if st.session_state["provinsi"] and p["domain_id"] == st.session_state["provinsi"]), 0)
+    ),
+    key="provinsi_select",
+)
+
+# Simpan ke session_state
+st.session_state["provinsi"] = selected_prov["domain_id"]
+
+
+# Dropdown Kabupaten dinamis
+kabupaten = get_kabupaten(domains, st.session_state["provinsi"])
+
+selected_kab = st.selectbox(
+    "Pilih Kabupaten/Kota",
+    kabupaten,
+    format_func=lambda x: f"{x['domain_id']} - {x['domain_name']}",
+    index=(
+        next((i for i, k in enumerate(kabupaten)
+              if st.session_state["kabupaten"] and k["domain_id"] == st.session_state["kabupaten"]), 0)
+    ),
+    key="kabupaten_select",
+)
+
+# Simpan ke session_state
+st.session_state["kabupaten"] = selected_kab["domain_id"]
 
 # ====== KONFIGURASI ======
 folder_path = 'G:\\IPDS\\STREAMLIT\\'
@@ -16,6 +109,7 @@ IDSLS = "idsls"
 IDSUBSLS = "idsubsls"
 THRESH = 0.20
 OUT_GPKG = f"{folder_path}bs_vs_sls.gpkg"
+domains = load_domains()
 
 # ====== FUNGSI ======
 def fix(gdf, idcol=None):
@@ -42,6 +136,28 @@ st.sidebar.header("Unggah File GeoJSON")
 bs_file = st.sidebar.file_uploader("Unggah File BS GeoJSON", type="geojson")
 sls_file = st.sidebar.file_uploader("Unggah File SLS GeoJSON", type="geojson")
 threshold = st.sidebar.slider("Threshold Overlap Signifikan (%)", 0, 100, 20)
+
+# Ambil daftar provinsi
+provinces = get_provinces(domains)
+
+# Dropdown Provinsi
+selected_prov = st.selectbox(
+    "Pilih Provinsi",
+    provinces,
+    format_func=lambda x: f"{x['domain_id']} - {x['domain_name']}",
+    key="provinsi"
+)
+
+# Ambil kabupaten sesuai provinsi terpilih
+kabupaten = get_kabupaten(domains, selected_prov["domain_id"])
+
+# Dropdown Kabupaten otomatis
+selected_kab = st.selectbox(
+    "Pilih Kabupaten/Kota",
+    kabupaten,
+    format_func=lambda x: f"{x['domain_id']} - {x['domain_name']}",
+    key="kabupaten"
+)
 
 # Tombol run → hanya set flag
 if st.sidebar.button("Jalankan Analisis"):
@@ -237,12 +353,14 @@ if st.session_state.get("analysis_done"):
 
     st.markdown(f"#### Jumlah IDBS Bermasalah: {len(st.session_state['export_df'])}")
     st.dataframe(st.session_state["export_df"])
+    tanggal_ymdhms = datetime.now().strftime("%Y%m%d%H%M%S")
+    kab = st.session_state["kabupaten"]
 
     # Download CSV
     st.download_button(
         "Unduh Hasil CSV",
         data=st.session_state["export_df1"].to_csv(index=False),
-        file_name="idbs_summary.csv",
+        file_name=f"{tanggal_ymdhms}_Hasil pengecekan desa blok sensus dan sls_{kab}.csv",
         mime="text/csv"
     )
 
@@ -255,7 +373,7 @@ if st.session_state.get("analysis_done"):
     st.download_button(
         "Unduh Hasil Excel",
         data=excel_data,
-        file_name="idbs_summary.xlsx",
+        file_name=f"{tanggal_ymdhms}_Hasil pengecekan desa blok sensus dan sls_{kab}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
@@ -263,7 +381,7 @@ if st.session_state.get("analysis_done"):
     st.download_button(
         "Unduh GeoPackage (EPSG:4326)",
         data=st.session_state["gpkg_bytes"],
-        file_name="bs_vs_sls_epsg4326.gpkg",
+        file_name=f"{tanggal_ymdhms}_bs_vs_sls_epsg4326_{kab}.gpkg",
         mime="application/geopackage+sqlite3"
     )
 
