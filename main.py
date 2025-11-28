@@ -208,13 +208,16 @@ if (
     bs_4326 = bs.to_crs(4326)
     sls_4326 = sls.to_crs(4326)
     bs_flag_4326 = bs_flag.to_crs(4326)
-
+    # Nama layer mengikuti nama file upload 
+    bs_layer_name = bs_file.name.replace(".geojson", "") 
+    sls_layer_name = sls_file.name.replace(".geojson", "")
+    
     with tempfile.TemporaryDirectory() as tmpdir:
         gpkg_path = os.path.join(tmpdir, "output.gpkg")
 
         bs_flag_4326.to_file(gpkg_path, layer="bs_flag", driver="GPKG")
-        bs_4326.to_file(gpkg_path, layer="bs_raw", driver="GPKG", mode="a")
-        sls_4326.to_file(gpkg_path, layer="sls_raw", driver="GPKG", mode="a")
+        bs_4326.to_file(gpkg_path, layer=bs_layer_name, driver="GPKG", mode="a")
+        sls_4326.to_file(gpkg_path, layer=sls_layer_name, driver="GPKG", mode="a")
 
         with open(gpkg_path, "rb") as f:
             gpkg_bytes = f.read()
