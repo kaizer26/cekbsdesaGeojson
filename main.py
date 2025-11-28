@@ -77,9 +77,9 @@ def to_metric_crs(gdf):
 # 4. Inisialisasi session_state
 # ==============================
 if "provinsi" not in st.session_state:
-    st.session_state["provinsi"] = None
+    st.session_state["provinsi"] = "6300"
 if "kabupaten" not in st.session_state:
-    st.session_state["kabupaten"] = None
+    st.session_state["kabupaten"] = "6310"
 if "run_analysis" not in st.session_state:
     st.session_state["run_analysis"] = False
 if "analysis_done" not in st.session_state:
@@ -222,7 +222,8 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
                 .sort_values([IDBS, "pct"], ascending=[True, False]) \
                 .groupby(IDBS) \
                 .apply(lambda d: "; ".join(f"{r[IDDESA]}:{r['pct']}%" for _, r in d.iterrows())) \
-                .reset_index(name="detail_iddesa_ge20")
+                .to_frame("detail_iddesa_ge20")
+                .reset_index()
 
             # --- nmsls & kdsls ---
             nmsls1 = ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
@@ -232,7 +233,8 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
                         f"{r['nmsls']} - [{r[IDSUBSLS][-2:]}]" if r[IDSUBSLS][-2:] != '00' else f"{r['nmsls']}"
                         for _, r in d.iterrows()
                     )
-                ).reset_index(name="nmsls_g1")
+                ).to_frame("nmsls_g1")
+                .reset_index()
 
             kdsls1 = ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
                 .sort_values(["idbs", IDSUBSLS]) \
