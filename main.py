@@ -36,7 +36,7 @@ def to_metric_crs(gdf):
     return gdf.to_crs(epsg), epsg
 
 # ====== STREAMLIT UI ======
-st.title("Analisis BS vs SLS")
+st.title("Pengecekan Desa Blok Sensus dan SLS")
 st.sidebar.header("Unggah File GeoJSON")
 
 bs_file = st.sidebar.file_uploader("Unggah File BS GeoJSON", type="geojson")
@@ -228,6 +228,7 @@ if (
     st.session_state["gpkg_bytes"] = gpkg_bytes
     st.session_state["analysis_done"] = True
 
+else: st.warning("Unggah file GeoJSON untuk BS dan SLS terlebih dahulu.")
 
 # ======================================================================
 # ====== TAMPILKAN OUTPUT BILA ANALISIS SUDAH SELESAI ======
