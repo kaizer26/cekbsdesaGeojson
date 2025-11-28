@@ -55,10 +55,14 @@ if run_analysis:
         if key in st.session_state:
             del st.session_state[key]
 
-    st.session_state["run"] = True
+    # Reset sebelum run ulang
+    st.session_state["should_run"] = True
 
     
-if run_analysis and bs_file and sls_file:
+if st.session_state.get("should_run") and bs_file and sls_file:
+    # Setelah mulai memproses, matikan trigger
+    st.session_state["should_run"] = False
+    
     if "export_df" not in st.session_state:
         # Membaca file GeoJSON yang diunggah
         bs = fix(gpd.read_file(bs_file), IDBS)
