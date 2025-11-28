@@ -170,7 +170,11 @@ if run_analysis and bs_file and sls_file:
         bs_flag["mismatch_dominant"] = (bs_flag["encoded_iddesa"] != bs_flag["dominant_iddesa"])
     
         # Tampilkan hasil di Streamlit
-        hasil_analisis = bs_flag[bs_flag["mismatch_dominant"]==True]
+        hasil_analisis = bs_flag[
+            bs_flag["mismatch_dominant"] |
+            (bs_flag["n_iddesa_ge20"] > 1)
+        ]
+
     
         export_cols = [
             "idbs", "nmprov", "nmkab", "nmkec", "nmdesa", "area_bs", "encoded_iddesa", 
