@@ -186,6 +186,9 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             bs_m, epsg = to_metric_crs(bs)
             sls_m = sls.to_crs(epsg)
 
+            st.dataframe(bs_m)
+            st.dataframe(sls_m)
+
             # --- Luas BS ---
             bs_m["area_bs"] = bs_m.geometry.area
             bs_m["encoded_iddesa"] = bs_m[IDBS].str.slice(0, 10)
