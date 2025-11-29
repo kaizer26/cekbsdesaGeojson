@@ -7,6 +7,7 @@ import os
 import io
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # ==============================
 # 0. Config dasar
@@ -365,12 +366,13 @@ if st.session_state.get("analysis_done"):
     st.dataframe(st.session_state["export_df"])
 
     # gunakan timestamp yang tersimpan
-    tanggal_ymdhms = st.session_state.get("timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
+    # datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y%m%d%H%M%S")
+    tanggal_ymdhms = st.session_state.get("timestamp", datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y%m%d%H%M%S"))
     kab = st.session_state.get("kabupaten", "")
 
     # Download CSV
     st.download_button(
-        "Unduh Hasil CSV",
+        f"Unduh Hasil CSV ({tanggal_ymdhms})",
         data=st.session_state["export_df1"].to_csv(index=False),
         file_name=f"{tanggal_ymdhms}_Hasil_pengecekan_{kab}.csv",
         mime="text/csv"
@@ -383,7 +385,7 @@ if st.session_state.get("analysis_done"):
     excel_data.seek(0)
 
     st.download_button(
-        "Unduh Hasil Excel",
+        f"Unduh Hasil Excel ({tanggal_ymdhms})",
         data=excel_data,
         file_name=f"{tanggal_ymdhms}_Hasil_pengecekan_{kab}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
