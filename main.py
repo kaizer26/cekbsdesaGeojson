@@ -367,7 +367,7 @@ if st.session_state.get("analysis_done"):
 
     # gunakan timestamp yang tersimpan
     # datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y%m%d%H%M%S")
-    tanggal_ymdhms = st.session_state.get("timestamp", datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y%m%d%H%M%S"))
+    tanggal_ymdhms = datetime.now(ZoneInfo("Asia/Jakarta")).strftime("%Y%m%d%H%M%S")
     kab = st.session_state.get("kabupaten", "")
 
     # Download CSV
