@@ -55,6 +55,20 @@ def get_kabupaten(domains, prov_id):
 # ==============================
 # 3. Utilitas GIS kecil
 # ==============================
+def safe_groupby_apply(df, group_col, func, colname):
+    """
+    Mengembalikan DataFrame aman, meskipun df kosong.
+    group_col = string nama kolom untuk groupby
+    func      = lambda function
+    colname   = nama kolom output setelah apply
+    """
+    if df.empty:
+        return pd.DataFrame(columns=[group_col, colname])
+
+    out = df.groupby(group_col).apply(func)
+    return out.reset_index(name=colname)
+
+
 def fix(gdf, idcol=None):
     gdf = gdf.copy()
     if idcol and idcol in gdf.columns:
@@ -186,9 +200,6 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             bs_m, epsg = to_metric_crs(bs)
             sls_m = sls.to_crs(epsg)
 
-            st.dataframe(bs_m)
-            st.dataframe(sls_m)
-
             # --- Luas BS ---
             bs_m["area_bs"] = bs_m.geometry.area
             bs_m["encoded_iddesa"] = bs_m[IDBS].str.slice(0, 10)
@@ -213,47 +224,72 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             ABC_grouped2["pct_of_bs"] = ABC_grouped2["area_part"] / ABC_grouped2["area_bs"]
 
             # --- threshold filter ---
-            ABC_geX = ABC_grouped[ABC_grouped["pct_of_bs"] >= (threshold / 100)].copy()
+            ABC_geX    = ABC_grouped[ABC_grouped["pct_of_bs"] >= (threshold / 100)].copy()
             ABC_geX_g1 = ABC_grouped1[ABC_grouped1["pct_of_bs"] >= (threshold / 100)].copy()
             ABC_geX_g2 = ABC_grouped2[ABC_grouped2["pct_of_bs"] >= (threshold / 100)].copy()
-
+            
             # --- Count iddesa signifikan ---
-            countsC = ABC_geX.groupby(IDBS)[IDDESA].nunique().reset_index(name="n_iddesa_ge20")
+            if ABC_geX.empty:
+                countsC = pd.DataFrame(columns=[IDBS, "n_iddesa_ge20"])
+            else:
+                countsC = ABC_geX.groupby(IDBS)[IDDESA] \
+                    .nunique().reset_index(name="n_iddesa_ge20")
 
-            # --- Detail persentase iddesa signifikan ---
-            detail_tblC = ABC_geX.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
-                .sort_values([IDBS, "pct"], ascending=[True, False]) \
-                .groupby(IDBS) \
-                .apply(lambda d: "; ".join(f"{r[IDDESA]}:{r['pct']}%" for _, r in d.iterrows())) \
-                .to_frame("detail_iddesa_ge20")
-                .reset_index()
+            # --- Detail persen per iddesa ---
+            detail_tblC = safe_groupby_apply(
+                ABC_geX.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2))
+                    .sort_values([IDBS, "pct"], ascending=[True, False]),
+                IDBS,
+                lambda d: "; ".join(f"{r[IDDESA]}:{r['pct']}%" for _, r in d.iterrows()),
+                "detail_iddesa_ge20"
+            )
 
-            # --- nmsls & kdsls ---
-            nmsls1 = ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
-                .sort_values(["idbs", "pct"], ascending=[True, False]) \
-                .groupby(IDBS).apply(
-                    lambda d: " , ".join(
-                        f"{r['nmsls']} - [{r[IDSUBSLS][-2:]}]" if r[IDSUBSLS][-2:] != '00' else f"{r['nmsls']}"
-                        for _, r in d.iterrows()
-                    )
-                ).to_frame("nmsls_g1")
-                .reset_index()
+            # --- nmsls_g1 ---
+            nmsls1 = safe_groupby_apply(
+                ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2))
+                        .sort_values(["idbs", "pct"], ascending=[True, False]),
+                IDBS,
+                lambda d: " , ".join(
+                    f"{r['nmsls']} - [{r[IDSUBSLS][-2:]}]" if r[IDSUBSLS][-2:] != '00'
+                    else f"{r['nmsls']}"
+                    for _, r in d.iterrows()
+                ),
+                "nmsls_g1"
+            )
 
-            kdsls1 = ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
-                .sort_values(["idbs", IDSUBSLS]) \
-                .groupby(IDBS).apply(lambda d: " , ".join(f"{r[IDSUBSLS][-6:]}" for _, r in d.iterrows())).reset_index(name="kdsls_g1")
+            # --- kdsls_g1 ---
+            kdsls1 = safe_groupby_apply(
+                ABC_geX_g1.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2))
+                        .sort_values(["idbs", IDSUBSLS]),
+                IDBS,
+                lambda d: " , ".join(f"{r[IDSUBSLS][-6:]}" for _, r in d.iterrows()),
+                "kdsls_g1"
+            )
 
-            kdsls2 = ABC_geX_g2.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
-                .sort_values(["idbs", IDSLS]) \
-                .groupby(IDBS).apply(lambda d: " , ".join(f"{r[IDSLS][-4:]}" for _, r in d.iterrows())).reset_index(name="kdsls_g2")
+            # --- kdsls_g2 ---
+            kdsls2 = safe_groupby_apply(
+                ABC_geX_g2.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2))
+                        .sort_values(["idbs", IDSLS]),
+                IDBS,
+                lambda d: " , ".join(f"{r[IDSLS][-4:]}" for _, r in d.iterrows()),
+                "kdsls_g2"
+            )
 
-            nmsls2 = ABC_geX_g2.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2)) \
-                .sort_values(["idbs", "pct"], ascending=[True, False]) \
-                .groupby(IDBS).apply(lambda d: " , ".join(f"{r['nmsls']}" for _, r in d.iterrows())).reset_index(name="nmsls_g2")
+            # --- nmsls_g2 ---
+            nmsls2 = safe_groupby_apply(
+                ABC_geX_g2.assign(pct=lambda d: (d["pct_of_bs"] * 100).round(2))
+                        .sort_values(["idbs", "pct"], ascending=[True, False]),
+                IDBS,
+                lambda d: " , ".join(f"{r['nmsls']}" for _, r in d.iterrows()),
+                "nmsls_g2"
+            )
 
-            result = nmsls1.merge(kdsls1, on="idbs", how="outer") \
-                           .merge(kdsls2, on="idbs", how="outer") \
-                           .merge(nmsls2, on="idbs", how="outer")
+            # --- merge final ---
+            result = (
+                nmsls1.merge(kdsls1, on="idbs", how="outer")
+                    .merge(kdsls2, on="idbs", how="outer")
+                    .merge(nmsls2, on="idbs", how="outer")
+            )
 
             # --- Dominant iddesa ---
             idx = ABC_grouped.groupby(IDBS)["pct_of_bs"].idxmax()
