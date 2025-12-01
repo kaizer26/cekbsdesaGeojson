@@ -88,6 +88,14 @@ def to_metric_crs(gdf):
     epsg = utm_epsg_from_lonlat(c.x, c.y)
     return gdf.to_crs(epsg), epsg
 
+def bersihkan_kolom_gpkg(gdf):
+    forbidden = ["fid", "ogr_fid", "ogc_fid", "rowid", "oid"]
+    for f in forbidden:
+        if f in gdf.columns:
+            gdf = gdf.drop(columns=[f])
+    return gdf
+
+
 # ==============================
 # 4. Inisialisasi session_state
 # ==============================
@@ -337,6 +345,10 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             bs_4326 = bs.to_crs(4326)
             sls_4326 = sls.to_crs(4326)
             bs_flag_4326 = bs_flag.to_crs(4326)
+
+            sls_4326 = bersihkan_kolom_gpkg(sls_4326)
+            bs_4326 = bersihkan_kolom_gpkg(bs_4326)
+            bs_flag_4326 = bersihkan_kolom_gpkg(bs_flag_4326)
             # Nama layer mengikuti nama file upload 
             bs_layer_name = bs_file.name.replace(".geojson", "") 
             sls_layer_name = sls_file.name.replace(".geojson", "")
