@@ -349,6 +349,11 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             sls_4326 = bersihkan_kolom_gpkg(sls_4326)
             bs_4326 = bersihkan_kolom_gpkg(bs_4326)
             bs_flag_4326 = bersihkan_kolom_gpkg(bs_flag_4326)
+            
+            # --- Layer hasil analisis (GeoDataFrame) ---
+            hasil_analisis_4326 = hasil_analisis.to_crs(4326)
+            hasil_analisis_4326 = bersihkan_kolom_gpkg(hasil_analisis_4326)
+            
             # Nama layer mengikuti nama file upload 
             bs_layer_name = bs_file.name.replace(".geojson", "") 
             sls_layer_name = sls_file.name.replace(".geojson", "")
@@ -356,9 +361,10 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             with tempfile.TemporaryDirectory() as tmpdir:
                 gpkg_path = os.path.join(tmpdir, "output.gpkg")
 
-                bs_flag_4326.to_file(gpkg_path, layer="bs_flag", driver="GPKG")
+                hasil_analisis_4326.to_file(gpkg_path, layer="bs_flag", driver="GPKG")
                 bs_4326.to_file(gpkg_path, layer=bs_layer_name, driver="GPKG", mode="a")
                 sls_4326.to_file(gpkg_path, layer=sls_layer_name, driver="GPKG", mode="a")
+                # hasil_pemeriksaan_4326.to_file(gpkg_path, layer="hasil_pemeriksaan_bs_desa", driver="GPKG", mode="a")
 
                 with open(gpkg_path, "rb") as f:
                     gpkg_bytes = f.read()
