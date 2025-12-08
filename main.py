@@ -361,6 +361,7 @@ if st.session_state.get("run_analysis") and not st.session_state.get("analysis_d
             with tempfile.TemporaryDirectory() as tmpdir:
                 gpkg_path = os.path.join(tmpdir, "output.gpkg")
 
+                bs_flag_4326.to_file(gpkg_path, layer="bs_flag_full_without_filter", driver="GPKG")
                 hasil_analisis_4326.to_file(gpkg_path, layer="bs_flag", driver="GPKG")
                 bs_4326.to_file(gpkg_path, layer=bs_layer_name, driver="GPKG", mode="a")
                 sls_4326.to_file(gpkg_path, layer=sls_layer_name, driver="GPKG", mode="a")
